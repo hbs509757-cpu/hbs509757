@@ -621,7 +621,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     // 美編排程
     var days = []; var st = addDays(today, -((dOf(today).getDay() + 6) % 7)); for (var i = 0; i < (DESK ? 28 : 14); i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
     var fd = S.f.drawDay || '';
-    h += '<div class="card"><h2>美編每日排程<span class="small muted">點格子只看那天</span></h2><div class="sched"><table><thead><tr><th></th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + WD[dOf(k).getDay()] + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
+    h += '<div class="card"><div class="row" style="align-items:center"><h2 style="margin:0">美編每日排程</h2><input type="date" id="drawDayPicker" class="inp sm" style="margin-left:auto" value="' + esc(fd) + '"><button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">全部</button></div><div class="sched"><table><thead><tr><th></th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + WD[dOf(k).getDay()] + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
       MAKERS.map(function (mk) { return '<tr><th>' + av(mk, 26) + '<br>' + esc(mk) + '</th>' + days.map(function (k) { var off = leaveOn(mk, k, true); var its = DB.draws.filter(function (d) { return d.status < 3 && d.maker === mk && d.due === k; }); var q = its.reduce(function (a, d) { return a + (+d.qty || 0); }, 0); var lv = its.length >= 3 ? 'c3' : (its.length === 2 ? 'c2' : (its.length ? 'c1' : ''));
         return '<td><button class="sc ' + (off ? 'leave' : lv) + (fd === k ? ' on' : '') + '" data-act="set" data-k="drawDay" data-v="' + (fd === k ? '' : k) + '">' + (off ? (off.status === 'pending' ? '休假?' : '休假') : (its.length ? its.length + '件<br><small>' + (q ? q + '張' : '') + '</small>' : '')) + '</button></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (fd ? '<button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">顯示全部（目前只看 ' + md(fd) + '）</button>' : '') + '</div>';
     var fl = S.f.drawF || 'open';
@@ -783,7 +783,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     h += '</div>';
     // 會議資訊
     h += '<div class="card"><h2>會議資訊</h2><div class="grid2"><label class="field">日期<input type="date" data-mtgf="date" value="' + esc(mtg.date) + '"></label><label class="field">時間<input type="time" data-mtgf="time" value="' + esc(mtg.time) + '"></label></div><div class="grid2"><label class="field">地點<input data-mtgf="place" value="' + esc(mtg.place) + '"></label><label class="field">議題<input data-mtgf="topic" value="' + esc(mtg.topic) + '"></label></div>' +
-      '<div class="field">出席人員（' + (mtg.attendees || []).length + ' 人）</div><div class="row wrap">' + ['孟宏 Jason', 'Sara', '宛汝', '麗潔', '佳勲'].map(function (n) { var on = (mtg.attendees || []).indexOf(n) >= 0; return '<button class="btn sm ' + (on ? '' : 'ghost') + '" data-act="mtgAtt" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div></div>';
+      '<div class="field">出席人員（' + (mtg.attendees || []).length + ' 人）</div><div class="row wrap">' + ['孟宏 Jason', '宛汝', '麗潔', '佳勲'].map(function (n) { var on = (mtg.attendees || []).indexOf(n) >= 0; return '<button class="btn sm ' + (on ? '' : 'ghost') + '" data-act="mtgAtt" data-v="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div></div>';
     // 統計篩選
     var f = S.f.mtgF || 'active';
     h += '<div class="stat"><div><b>' + active.length + '</b><span>進行中專案</span></div><div><b style="color:' + (active.length - filled ? 'var(--bad)' : 'var(--ok)') + '">' + (active.length - filled) + '</b><span>本週未填</span></div><div><b style="color:#B84A12">' + jT.length + '</b><span>' + TJ + '</span></div></div>';
@@ -1072,7 +1072,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     crEdit: function () { S.f.cr = curMtg().cancelReason || ''; render(); },
     crCancel: function () { var m = curMtg(); if (!(m.cancelReason || '').trim()) m.held = null; S.f.cr = null; save(); render(); },
     crSave: function () { var m = curMtg(); m.cancelReason = val('crIn').trim(); S.f.cr = null; save(); render(); },
-    mtgAtt: function (v) { var m = curMtg(); m.attendees = m.attendees || []; var i = m.attendees.indexOf(v); if (i >= 0) m.attendees.splice(i, 1); else m.attendees.push(v); var P = ['孟宏 Jason', 'Sara', '宛汝', '麗潔', '佳勲']; m.attendees.sort(function (a, b) { return P.indexOf(a) - P.indexOf(b); }); save(); render(); },
+    mtgAtt: function (v) { var m = curMtg(); m.attendees = m.attendees || []; var i = m.attendees.indexOf(v); if (i >= 0) m.attendees.splice(i, 1); else m.attendees.push(v); var P = ['孟宏 Jason', '宛汝', '麗潔', '佳勲']; m.attendees.sort(function (a, b) { return P.indexOf(a) - P.indexOf(b); }); save(); render(); },
     npOpen: function () { S.f.np = { name: '', owner: '宛汝', designer: '' }; render(); },
     npAdd: function () { var nm = val('npName').trim(); if (!nm) return toast('請輸入專案名稱'); if (mdb().projects.some(function (p) { return p.name === nm && p.status !== '結案'; })) return toast('已經有這個專案了'); mdb().projects.unshift({ id: 'p' + Date.now(), name: nm, owner: val('npOwner'), designer: val('npDesigner'), status: '進行中', plan: '', links: [] }); S.f.np = null; save(); toast('已新增專案：' + nm); render(); },
     renStart: function (v) { S.f.ren = { id: v, name: mProj(v).name }; render(); },
@@ -1127,6 +1127,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (t.id === 'apType') { keep(); render(); }
     if (t.id === 'ceCat') { keep(); render(); }
     if (t.id === 'progDate') { S.f.progDay = t.value || dkey(); render(); }
+    if (t.id === 'drawDayPicker') { S.f.drawDay = t.value || ''; render(); return; }
     if (t.id === 'wxSel') { DB.cfg.weather = t.value; save(); toast('已更新天氣警報'); }
     if (t.id === 'apImgs') { keep(); readImages(t.files, 1200, function (srcs) { S.f.ap.images = (S.f.ap.images || []).concat(srcs); render(); }); }
     if (t.id === 'restoreFile' && t.files && t.files[0]) { var fl = t.files[0]; var fr = new FileReader(); fr.onload = function () { try { var d = JSON.parse(fr.result); if (!d.rooms || !d.punch) throw 0; S.f.restore = { name: fl.name, data: d }; } catch (x) { toast('這不是惠邦的備份檔'); } render(); }; fr.readAsText(fl); }
