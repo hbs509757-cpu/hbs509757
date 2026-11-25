@@ -206,11 +206,12 @@ html.desk main { max-width: 1320px; margin: 0 auto; padding: 24px 24px 80px; gap
 html.desk main.inroom { padding-bottom: 170px; }
 html.desk main.hasrem { padding-bottom: 200px; }
 html.desk main.dhome { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-html.desk main.dhome > .ticker, html.desk main.dhome > .hero, html.desk main.dhome > .apcard, html.desk main.dhome > .wx-y, html.desk main.dhome > .wx-b, html.desk main.dhome > .wx-r { grid-column: 1 / -1; }
+html.desk main.dhome > .ticker, html.desk main.dhome > .hero, html.desk main.dhome > .apcard, html.desk main.dhome > .wx-y, html.desk main.dhome > .wx-b, html.desk main.dhome > .wx-r, html.desk main.dhome > .wx-punch { grid-column: 1 / -1; }
 html.desk .ticker { margin: -24px -24px 0; }
 html.desk .ptitle { display: flex; align-items: center; gap: 12px; } html.desk .ptitle h1 { margin: 0; font-size: 34px; font-weight: 900; }
 html.desk .hero { padding: 28px; } html.desk .hl { font-size: 40px; }
 html.desk .cal .d { min-height: 96px; font-size: 13px; } html.desk .cal .dots i { width: 8px; height: 8px; }
+html.desk .sched table { width: 100%; }
 html.desk .tabs { display: none; }
 html.desk .sheet { top: 84px; right: max(16px, calc(50% - 650px)); }
 html.desk .rem { bottom: 20px; }
@@ -460,7 +461,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
       '<div class="att">' + staffList().map(function (n) { var off = todayOff.filter(function (a) { return a.from === n; })[0]; var pr = (DB.punch[n] || {})[today] || {}; var st = off ? '休假（' + off.kind + '・' + off.span + '）' : (pr.in ? (pr.out ? '已下班' : '上班中') : '上班中'); return '<span class="' + (off ? 'off' : '') + '">' + esc(initial(n)) + ' ' + esc(n) + ' · ' + esc(st) + '</span>'; }).join('') + '</div>' +
       '<div class="small">下一位休假：' + (upcoming ? esc(upcoming.from + ' ' + md(upcoming.leaveDate) + '（' + upcoming.kind + '・' + upcoming.span + '）') : '近期沒有排休') + (mgr ? ' ｜ <button class="lnk" data-act="go" data-v="leaveAll">休假總覽</button>' : '') + '</div>' +
       '<div class="row wrap" style="margin-top:4px">' + (mgr ? '<button class="btn" data-act="drawApplyGo">＋ 製圖申請 →</button>' : '<button class="btn" data-act="tab" data-v="log">新增今日工作 →</button>') + '</div></section>';
-    if (!mgr) { var pi = punchInfo(); h += '<div class="card"><h2>今日打卡' + (myPunch().in && mins(myPunch().in) > WORK_IN ? '<span class="pill p-bad">遲到</span>' : '') + '</h2>' + netLine() + '<button class="punchbtn big ' + pi.cls + '" data-act="' + pi.act + '"' + (pi.act ? '' : ' disabled') + '>' + ICON.clock + esc(pi.label) + '</button></div>'; }
+    if (!mgr) { var pi = punchInfo(); h += '<div class="card wx-punch"><h2>今日打卡' + (myPunch().in && mins(myPunch().in) > WORK_IN ? '<span class="pill p-bad">遲到</span>' : '') + '</h2>' + netLine() + '<button class="punchbtn big ' + pi.cls + '" data-act="' + pi.act + '"' + (pi.act ? '' : ' disabled') + '>' + ICON.clock + esc(pi.label) + '</button></div>'; }
     h += approvalsCard();
     return h;
   }
@@ -618,7 +619,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     var h = '<p class="muted small" style="margin:0">企劃送出製圖需求 → 美編接單製作 → 申請人確認通過。依期望完成日排序。</p>';
     if (!designer) h += S.f.dw ? drawForm() : '<button class="btn orange" data-act="drawNew">＋ 申請製圖</button>';
     // 美編排程
-    var days = []; var st = addDays(today, -((dOf(today).getDay() + 6) % 7)); for (var i = 0; i < 14; i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
+    var days = []; var st = addDays(today, -((dOf(today).getDay() + 6) % 7)); for (var i = 0; i < (DESK ? 28 : 14); i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
     var fd = S.f.drawDay || '';
     h += '<div class="card"><h2>美編每日排程<span class="small muted">點格子只看那天</span></h2><div class="sched"><table><thead><tr><th></th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + WD[dOf(k).getDay()] + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
       MAKERS.map(function (mk) { return '<tr><th>' + av(mk, 26) + '<br>' + esc(mk) + '</th>' + days.map(function (k) { var off = leaveOn(mk, k, true); var its = DB.draws.filter(function (d) { return d.status < 3 && d.maker === mk && d.due === k; }); var q = its.reduce(function (a, d) { return a + (+d.qty || 0); }, 0); var lv = its.length >= 3 ? 'c3' : (its.length === 2 ? 'c2' : (its.length ? 'c1' : ''));
