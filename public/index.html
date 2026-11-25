@@ -620,9 +620,9 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (!designer) h += S.f.dw ? drawForm() : '<button class="btn orange" data-act="drawNew">＋ 申請製圖</button>';
     // 美編排程
     var fd = S.f.drawDay || '';
-    var anchorDay = fd || today;
-    var days = []; var st = addDays(dOf(anchorDay), -((dOf(anchorDay).getDay() + 6) % 7)); for (var i = 0; i < (DESK ? 28 : 14); i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
-    h += '<div class="card"><div class="row" style="align-items:center"><h2 style="margin:0">美編每日排程</h2><input type="date" id="drawDayPicker" class="inp sm" style="margin-left:auto" value="' + esc(fd) + '"><button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">全部</button></div><div class="sched"><table><thead><tr><th></th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + WD[dOf(k).getDay()] + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
+    var weekOff = +(S.f.drawWeekOff) || 0;
+    var days = []; var st = addDays(dOf(today), -((dOf(today).getDay() + 6) % 7) + weekOff * 7); for (var i = 0; i < (DESK ? 28 : 14); i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
+    h += '<div class="card"><div class="row" style="align-items:center;gap:6px"><h2 style="margin:0">美編每日排程</h2><span class="small muted" style="margin-left:4px">點格子只看那天</span><div class="row" style="gap:4px;margin-left:auto"><button class="btn sm ghost" data-act="drawNavPrev">‹ 上週</button>' + (weekOff !== 0 ? '<button class="btn sm ghost" data-act="set" data-k="drawWeekOff" data-v="">今天</button>' : '') + '<button class="btn sm ghost" data-act="drawNavNext">下週 ›</button></div></div><div class="sched"><table><thead><tr><th>美編</th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + (k === today ? '今天' : WD[dOf(k).getDay()]) + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
       MAKERS.map(function (mk) { return '<tr><th>' + av(mk, 26) + '<br>' + esc(mk) + '</th>' + days.map(function (k) { var off = leaveOn(mk, k, true); var its = DB.draws.filter(function (d) { return d.status < 3 && d.maker === mk && d.due === k; }); var q = its.reduce(function (a, d) { return a + (+d.qty || 0); }, 0); var lv = its.length >= 3 ? 'c3' : (its.length === 2 ? 'c2' : (its.length ? 'c1' : ''));
         return '<td><button class="sc ' + (off ? 'leave' : lv) + (fd === k ? ' on' : '') + '" data-act="set" data-k="drawDay" data-v="' + (fd === k ? '' : k) + '">' + (off ? (off.status === 'pending' ? '休假?' : '休假') : (its.length ? its.length + '件<br><small>' + (q ? q + '張' : '') + '</small>' : '')) + '</button></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (fd ? '<button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">顯示全部（目前只看 ' + md(fd) + '）</button>' : '') + '</div>';
     var fl = S.f.drawF || 'open';
@@ -1023,6 +1023,8 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     dwCancel: function (v) { twice('dw' + v, function () { var d = dw(v); DB.draws = DB.draws.filter(function (x) { return x !== d; }); notify(roomFor(d.room || d.project), '已取消製圖申請：' + d.project + '「' + d.desc.slice(0, 18) + '」（原訂 ' + md(d.due) + '，' + S.me + ' 取消）', d.maker); save(); render(); }); },
     dwStart: function (v) { var d = dw(v); d.status = 1; notify(roomFor(d.room || d.project), d.maker + ' 開始製作：' + d.project + '「' + d.desc.slice(0, 18) + '」'); save(); toast('開始製作：' + d.project); render(); },
     dwTake: function (v) { var d = dw(v); d.status = 1; d.maker = S.me; notify(roomFor(d.room || d.project), S.me + ' 接下製圖：' + d.project + '「' + d.desc.slice(0, 18) + '」'); save(); render(); },
+    drawNavPrev: function () { S.f.drawWeekOff = (+(S.f.drawWeekOff) || 0) - 1; render(); },
+    drawNavNext: function () { S.f.drawWeekOff = (+(S.f.drawWeekOff) || 0) + 1; render(); },
     dwSend: function (v) { var d = dw(v); var p = val('dwPath_' + v).trim(); if (!p) return toast('請填寫完稿位置'); d.status = 2; d.review = '待申請人確認'; d.fixNote = ''; d.path = p; var who = /^客戶：/.test(d.applicant) ? d.filedBy : d.applicant; notify(roomFor(d.room || d.project), '@' + who + ' ' + d.project + '「' + d.desc.slice(0, 18) + '」完成了，請確認。完稿：' + p, who); save(); toast('已送審'); render(); },
     dwPass: function (v) { var d = dw(v); d.status = 3; d.review = '已通過'; d.doneDate = md(dkey()); save(); toast('已通過：' + d.project); render(); },
     dwFix: function (v) { var t = val('dwFix').trim(); if (!t) return toast('請寫下要修改的地方'); var d = dw(v); d.status = 1; d.review = '需修改'; d.fixNote = t; S.f.fixId = null; notify(roomFor(d.room || d.project), '@' + d.maker + ' ' + d.project + ' 需要修改：' + t, d.maker); save(); render(); },
@@ -1128,7 +1130,6 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (t.id === 'apType') { keep(); render(); }
     if (t.id === 'ceCat') { keep(); render(); }
     if (t.id === 'progDate') { S.f.progDay = t.value || dkey(); render(); }
-    if (t.id === 'drawDayPicker') { S.f.drawDay = t.value || ''; render(); return; }
     if (t.id === 'wxSel') { DB.cfg.weather = t.value; save(); toast('已更新天氣警報'); }
     if (t.id === 'apImgs') { keep(); readImages(t.files, 1200, function (srcs) { S.f.ap.images = (S.f.ap.images || []).concat(srcs); render(); }); }
     if (t.id === 'restoreFile' && t.files && t.files[0]) { var fl = t.files[0]; var fr = new FileReader(); fr.onload = function () { try { var d = JSON.parse(fr.result); if (!d.rooms || !d.punch) throw 0; S.f.restore = { name: fl.name, data: d }; } catch (x) { toast('這不是惠邦的備份檔'); } render(); }; fr.readAsText(fl); }
