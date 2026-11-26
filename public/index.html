@@ -621,7 +621,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     // 美編排程
     var fd = S.f.drawDay || '';
     var weekOff = +(S.f.drawWeekOff) || 0;
-    var days = []; var st = addDays(dOf(today), -((dOf(today).getDay() + 6) % 7) + weekOff * 7); for (var i = 0; i < 7; i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
+    var days = []; var st = addDays(today, -((dOf(today).getDay() + 6) % 7) + weekOff * 7); for (var i = 0; i < 7; i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
     var ldot = function(c) { return '<i style="display:inline-block;width:13px;height:13px;border-radius:3px;background:' + c + ';vertical-align:middle;margin-right:3px"></i>'; };
     h += '<div class="card">' +
       '<div class="row" style="align-items:center">' +
