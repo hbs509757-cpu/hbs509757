@@ -211,7 +211,7 @@ html.desk .ticker { margin: -24px -24px 0; }
 html.desk .ptitle { display: flex; align-items: center; gap: 12px; } html.desk .ptitle h1 { margin: 0; font-size: 34px; font-weight: 900; }
 html.desk .hero { padding: 28px; } html.desk .hl { font-size: 40px; }
 html.desk .cal .d { min-height: 96px; font-size: 13px; } html.desk .cal .dots i { width: 8px; height: 8px; }
-html.desk .sched table { width: 100%; }
+html.desk .sched table { width: 100%; } html.desk .sched .sc { width: 100%; min-height: 54px; height: auto; }
 html.desk .tabs { display: none; }
 html.desk .sheet { top: 84px; right: max(16px, calc(50% - 650px)); }
 html.desk .rem { bottom: 20px; }
@@ -621,7 +621,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     // 美編排程
     var fd = S.f.drawDay || '';
     var weekOff = +(S.f.drawWeekOff) || 0;
-    var days = []; var st = addDays(dOf(today), -((dOf(today).getDay() + 6) % 7) + weekOff * 7); for (var i = 0; i < (DESK ? 28 : 14); i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
+    var days = []; var st = addDays(dOf(today), -((dOf(today).getDay() + 6) % 7) + weekOff * 7); for (var i = 0; i < 14; i++) { var k = addDays(st, i); var wd = dOf(k).getDay(); if (wd && wd !== 6) days.push(k); }
     var ldot = function(c) { return '<i style="display:inline-block;width:13px;height:13px;border-radius:3px;background:' + c + ';vertical-align:middle;margin-right:3px"></i>'; };
     h += '<div class="card">' +
       '<div class="row" style="align-items:center">' +
