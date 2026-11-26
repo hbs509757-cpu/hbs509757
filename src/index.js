@@ -7,6 +7,9 @@ const authRouter      = require('./routes/auth');
 const punchRouter     = require('./routes/punch');
 const cfgRouter       = require('./routes/cfg');
 const approvalsRouter = require('./routes/approvals');
+const logsRouter      = require('./routes/logs');
+const drawsRouter     = require('./routes/draws');
+const leaveRouter     = require('./routes/leave');
 
 const app = express();
 
@@ -18,6 +21,9 @@ app.use('/api/auth',      authRouter);
 app.use('/api/punch',     punchRouter);
 app.use('/api/cfg',       cfgRouter);
 app.use('/api/approvals', approvalsRouter);
+app.use('/api/logs',      logsRouter);
+app.use('/api/draws',     drawsRouter);
+app.use('/api/leave',     leaveRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ data: 'ok', error: null, ts: new Date().toISOString() });
