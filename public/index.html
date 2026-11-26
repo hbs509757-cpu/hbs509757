@@ -144,7 +144,7 @@ textarea.inp, .field textarea { min-height: 64px; resize: vertical; line-height:
 .planday { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 14px; background: var(--soft); }
 /* draw */
 .sched { overflow-x: auto; } .sched table { border-collapse: separate; border-spacing: 3px; font-size: 12px; }
-.sched th { font-weight: 700; color: var(--muted); padding: 2px; min-width: 44px; } .sched th span { font-weight: 400; } .sched th.tday { background: var(--ink); color: #fff; border-radius: 10px; padding: 4px 6px; }
+.sched th { font-weight: 700; color: var(--muted); padding: 2px; min-width: 44px; } .sched th span { font-weight: 400; } .sched th.tday { color: var(--accent); font-weight: 900; }
 .sc { width: 46px; height: 46px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 12px; font-weight: 700; line-height: 1.15; padding: 0; }
 .sc.c1 { background: #FFE3CC; } .sc.c2 { background: #FFB37A; } .sc.c3 { background: #EF7D3A; } .sc.leave { background: var(--ink); color: var(--yellow); } .sc.on { outline: 3px solid var(--ink); } .sc.tday-col { border: 2px solid var(--accent); }
 .dgh { display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
@@ -633,9 +633,9 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
       '<div class="row" style="align-items:center;gap:6px"><span class="small muted">點格子只看那天</span>' +
         '<div class="row" style="gap:4px;margin-left:auto"><button class="btn sm ghost" data-act="drawNavPrev">‹ 上週</button>' + (weekOff !== 0 ? '<button class="btn sm ghost" data-act="set" data-k="drawWeekOff" data-v="">今天</button>' : '') + '<button class="btn sm ghost" data-act="drawNavNext">下週 ›</button></div>' +
       '</div>' +
-      '<div class="sched"><table><thead><tr><th>美編</th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + (k === today ? '今天' : WD[dOf(k).getDay()]) + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
+      '<div class="sched"><table><thead><tr><th>美編</th>' + days.map(function (k) { return '<th class="' + (k === today ? 'tday' : '') + '">' + md(k) + '<br><span>' + WD[dOf(k).getDay()] + '</span></th>'; }).join('') + '</tr></thead><tbody>' +
       MAKERS.map(function (mk) { return '<tr><th>' + av(mk, 26) + '<br>' + esc(mk) + '</th>' + days.map(function (k) { var off = leaveOn(mk, k, true); var its = DB.draws.filter(function (d) { return d.status < 3 && d.maker === mk && d.due === k; }); var q = its.reduce(function (a, d) { return a + (+d.qty || 0); }, 0); var lv = its.length >= 3 ? 'c3' : (its.length === 2 ? 'c2' : (its.length ? 'c1' : ''));
-        return '<td><button class="sc ' + (off ? 'leave' : lv) + (fd === k ? ' on' : '') + (k === today ? ' tday-col' : '') + '" data-act="set" data-k="drawDay" data-v="' + (fd === k ? '' : k) + '">' + (off ? (off.status === 'pending' ? '休假?' : '休假') : (its.length ? its.length + '件<br><small>' + (q ? q + '張' : '') + '</small>' : '—')) + '</button></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (fd ? '<button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">顯示全部（目前只看 ' + md(fd) + '）</button>' : '') + '</div>';
+        return '<td><button class="sc ' + (off ? 'leave' : lv) + (fd === k ? ' on' : '') + (k === today ? ' tday-col' : '') + '" data-act="set" data-k="drawDay" data-v="' + (fd === k ? '' : k) + '">' + (off ? '休' : (its.length ? its.length : '')) + '</button></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' + (fd ? '<button class="btn sm ghost" data-act="set" data-k="drawDay" data-v="">顯示全部（目前只看 ' + md(fd) + '）</button>' : '') + '</div>';
     var fl = S.f.drawF || 'open';
     h += seg('drawF', [['open', '未完成'], ['mine', '跟我有關'], ['done', '已完成']], fl);
     var rows = DB.draws.filter(function (d) { if (fd && d.due !== fd) return false; if (fl === 'done') return d.status === 3; if (fl === 'mine') return d.status < 3 && (d.applicant === me || d.filedBy === me || d.maker === me || (designer && !d.maker)); return d.status < 3; }).sort(function (a, b) { return a.due.localeCompare(b.due); });
