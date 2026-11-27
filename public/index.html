@@ -493,7 +493,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
       var lf = S.f.lv || { date: '', span: '整天', kind: '特休', reason: '' }; var al = annual(me);
       h += '<div class="sub"><b>休假申請</b>' + (al.hasHire ? '<span class="small muted">特休剩餘 ' + al.left + ' 天</span>' : '') + '<div class="field">申請人<div class="ro">' + esc(me) + '</div></div>' +
         '<label class="field">休假日期 *<input id="lvDate" type="date" value="' + esc(lf.date) + '"></label><div class="grid2"><label class="field">整天／半天<select id="lvSpan">' + opt(['整天', '上半天', '下半天'], lf.span) + '</select></label><label class="field">假別<select id="lvKind">' + opt(['特休', '補休', '事假', '病假', '其他'], lf.kind) + '</select></label></div>' +
-        '<label class="field">事由（選填）<input id="lvReason" value="' + esc(lf.reason || '') + '"></label><div class="row"><button class="btn ghost" data-act="apForm" data-v="">取消</button><button class="btn orange grow" data-act="lvSubmit">送出休假申請</button></div></div>';
+        '<label class="field">備註（只有你和主管看得到）<input id="lvReason" value="' + esc(lf.reason || '') + '"></label><div class="row"><button class="btn ghost" data-act="apForm" data-v="">取消</button><button class="btn orange grow" data-act="lvSubmit">送出休假申請</button></div></div>';
     }
     h += '<div class="list">' + (list.length ? list.map(apItem).join('') : '<div class="empty">' + (mgr ? (tab === 'pending' ? '目前沒有待簽核事項，辛苦了！' : '還沒有簽核過的紀錄') : (tab === 'pending' ? '你目前沒有待審核的事項' : '還沒有審核完成的紀錄')) + '</div>') + '</div></div>';
     return h;
@@ -507,6 +507,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (a.images && a.images.length) h += '<div class="thumbs">' + a.images.map(function (src) { return '<span><img src="' + src + '" alt="單據" data-act="zoom" data-v="' + src + '"></span>'; }).join('') + '</div>';
     if (st === 'pending' && a.note) h += '<span class="small" style="color:var(--blue)">重新送簽・修改說明：' + esc(a.note) + '</span>';
     if (st === 'rejected') h += '<span class="small" style="color:var(--bad)">退回原因（' + esc(a.by) + '）：' + esc(a.reason) + '</span>';
+    if (a.type === '休假申請' && a.reasonText && (mgr || a.from === S.me)) h += '<span class="small muted">備註：' + esc(a.reasonText) + '</span>';
     if (mgr && st === 'pending') {
       if (S.f.rejId === a.id) h += '<label class="field">退回原因 *<textarea id="rejReason" placeholder="請寫下需要修改的地方，送簽人會看到這段說明"></textarea></label><div class="row"><button class="btn sm ghost" data-act="set" data-k="rejId" data-v="">取消</button><button class="btn sm red grow" data-act="apReject" data-v="' + a.id + '">確認退回</button></div>';
       else h += '<div class="row"><button class="btn sm ghost grow" data-act="set" data-k="rejId" data-v="' + a.id + '">退回</button><button class="btn sm orange grow" data-act="apApprove" data-v="' + a.id + '">簽核</button></div>';
@@ -515,9 +516,17 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
       h += '<div class="row wrap"><span class="pill ' + stx[1] + '">' + esc(stx[0]) + '</span>';
       if (!mgr && st === 'pending') {
         if (S.conf === 'apc' + a.id) h += '</div><div class="warnbox">確定要取消這筆申請嗎？取消後就不會送到 孟宏 Jason／Sara。<div class="row"><button class="btn sm ghost" data-act="set" data-k="conf" data-v="">先不要</button><button class="btn sm red" data-act="apCancel" data-v="' + a.id + '">確定取消</button></div></div><div>';
-        else h += '<button class="btn sm ' + (active ? 'ghost' : 'orange') + '" data-act="apRemind" data-v="' + a.id + '"' + (active ? ' disabled' : '') + '>' + (active ? '已提醒 ' + esc(a.remindedAt) : (a.remindedAt ? '再次提醒' : '提醒簽核')) + '</button><button class="btn sm ghost" data-act="set" data-k="conf" data-v="apc' + a.id + '">取消申請</button>';
+        else h += '<button class="btn sm ' + (active ? 'ghost' : 'orange') + '" data-act="apRemind" data-v="' + a.id + '"' + (active ? ' disabled' : '') + '>' + (active ? '已提醒 ' + esc(a.remindedAt) : (a.remindedAt ? '再次提醒' : '提醒簽核')) + '</button><button class="btn sm ghost" data-act="apEditStart" data-v="' + a.id + '">編輯</button><button class="btn sm ghost" data-act="set" data-k="conf" data-v="apc' + a.id + '">取消申請</button>';
       }
       h += '</div>';
+      if (!mgr && st === 'pending' && S.f.apEditId === a.id) {
+        var titleShort = (a.title || '').indexOf('｜') >= 0 ? a.title.split('｜')[1] : a.title;
+        if (a.type === '休假申請') {
+          h += '<div class="sub"><b class="small">編輯休假申請</b><label class="field">休假日期 *<input id="ape_date" type="date" value="' + esc(a.leaveDate || '') + '"></label><div class="grid2"><label class="field">整天／半天<select id="ape_span">' + opt(['整天', '上半天', '下半天'], a.span) + '</select></label><label class="field">假別<select id="ape_kind">' + opt(['特休', '補休', '事假', '病假', '其他'], a.kind) + '</select></label></div><label class="field">備註（只有你和主管看得到）<input id="ape_reason" value="' + esc(a.reasonText || '') + '"></label><div class="row"><button class="btn sm ghost" data-act="apEditCancel">取消</button><button class="btn sm orange grow" data-act="apEditSave" data-v="' + a.id + '">儲存</button></div></div>';
+        } else {
+          h += '<div class="sub"><b class="small">編輯送簽事項</b><div class="grid2"><label class="field">類別<select id="ape_type">' + opt(['製圖審核', '文案送審', '請款', '其他'], a.type) + '</select></label><div class="field">送簽人<div class="ro">' + esc(a.from) + '</div></div></div><label class="field">專案 *<input id="ape_proj" value="' + esc(a.project || '') + '"></label><label class="field">簽核內容 *<input id="ape_title" value="' + esc(titleShort) + '"></label><div class="row"><button class="btn sm ghost" data-act="apEditCancel">取消</button><button class="btn sm orange grow" data-act="apEditSave" data-v="' + a.id + '">儲存</button></div></div>';
+        }
+      }
       if (!mgr && st === 'rejected') {
         var ed = (S.f.edits || {})[a.id] || {};
         h += '<div class="sub"><b class="small">修改後重新申請</b><label class="field">簽核內容 *<input id="re_t_' + a.id + '" value="' + esc(ed.title != null ? ed.title : a.title) + '"></label><label class="field">修改說明<textarea id="re_n_' + a.id + '" placeholder="例：已和客戶確認門檻為滿 1,200 折 120">' + esc(ed.note || '') + '</textarea></label><div class="row"><button class="btn sm ghost" data-act="apDrop" data-v="' + a.id + '">不再申請</button><button class="btn sm orange grow" data-act="apResubmit" data-v="' + a.id + '">重新申請</button></div></div>';
@@ -1008,6 +1017,9 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     apCancel: function (v) { DB.approvals = DB.approvals.filter(function (a) { return String(a.id) !== String(v); }); S.conf = null; save(); render(); },
     apDrop: function (v) { A.apCancel(v); },
     apResubmit: function (v) { var a = ap(v); var t = val('re_t_' + v).trim(); if (!t) return toast('簽核內容不能空白'); a.title = t; a.note = val('re_n_' + v).trim(); a.status = 'pending'; a.date = md(dkey()); a.prevReason = a.reason; a.reason = ''; a.by = ''; if (S.f.edits) delete S.f.edits[v]; save(); toast('已重新送出'); render(); },
+    apEditStart: function (v) { S.f.apEditId = v; S.conf = null; render(); },
+    apEditCancel: function () { S.f.apEditId = null; render(); },
+    apEditSave: function (v) { var a = ap(v); if (!a) return; if (a.type === '休假申請') { var d = val('ape_date'), sp = val('ape_span'), kd = val('ape_kind'), rs = val('ape_reason'); if (!d) return toast('請選擇休假日期'); a.leaveDate = d; a.span = sp; a.kind = kd; a.reasonText = rs; a.title = a.from + ' ' + md(d) + ' ' + kd + '（' + sp + '）'; } else { var tp = val('ape_type'), pj = val('ape_proj').trim(), tt = val('ape_title').trim(); if (!pj) return toast('請選擇或輸入專案'); if (!tt) return toast('請填寫簽核內容'); a.type = tp; a.project = pj; a.title = pj + '｜' + tt; } S.f.apEditId = null; save(); toast('已更新'); render(); },
     // 行事曆
     calShow: function (v) { var s = S.f.calShow || { '公司': true, '專案': true, '假日': true }; s[v] = !s[v]; S.f.calShow = s; render(); },
     calNew: function (v) { S.f.calForm = { cat: '公司', project: '', title: '', date: v || S.f.calSel || dkey(), time: '' }; render(); setTimeout(function () { var e = document.getElementById('ceTitle'); if (e) e.scrollIntoView({ block: 'center' }); }, 50); },
