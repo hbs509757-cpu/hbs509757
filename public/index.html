@@ -286,6 +286,9 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
   function mdw(k) { return md(k) + '（' + WD[dOf(k).getDay()] + '）'; }
   function stamp() { var d = new Date(); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm(d); }
   function safeUrl(u) { u = String(u || '').trim(); if (!u) return ''; if (!/^https?:\/\//i.test(u)) u = 'https://' + u; return /^https?:\/\/[^\s"<>]+$/i.test(u) ? u : ''; }
+  function descRender(s) { if (!s) return ''; var r = '', i = 0, buf = ''; while (i < s.length) { if (s[i] === '*' && s[i+1] === '*') { var e1 = s.indexOf('**', i+2); if (e1 > i+2) { r += esc(buf) + '<strong>' + esc(s.slice(i+2, e1)) + '</strong>'; buf = ''; i = e1+2; continue; } } if (s[i] === '{' && s[i+1] === 'r' && s[i+2] === ':') { var e2 = s.indexOf('}', i+3); if (e2 > i+3) { r += esc(buf) + '<span style="color:#E3181F">' + esc(s.slice(i+3, e2)) + '</span>'; buf = ''; i = e2+1; continue; } } if (s[i] === '[') { var tb = s.indexOf(']', i+1); if (tb > i && s[tb+1] === '(') { var ub = s.indexOf(')', tb+2); if (ub > tb+2) { var lt = s.slice(i+1,tb), sf = safeUrl(s.slice(tb+2,ub)); r += esc(buf) + (sf ? '<a href="' + sf + '" target="_blank" rel="noopener">' + esc(lt) + '</a>' : esc(lt)); buf = ''; i = ub+1; continue; } } } buf += s[i]; i++; } return r + esc(buf); }
+  function fmtWrap(id, pre, suf) { var el = document.getElementById(id); if (!el) return; var s = el.selectionStart, e = el.selectionEnd, sel = el.value.slice(s, e) || '文字'; el.value = el.value.slice(0, s) + pre + sel + suf + el.value.slice(e); el.selectionStart = s + pre.length; el.selectionEnd = s + pre.length + sel.length; el.focus(); }
+  function fmtLink(id) { var el = document.getElementById(id); if (!el) return; var url = prompt('輸入網址', 'https://'); if (!url || url === 'https://') return; var s = el.selectionStart, e = el.selectionEnd, sel = el.value.slice(s, e) || '連結文字'; el.value = el.value.slice(0, s) + '[' + sel + '](' + url + ')' + el.value.slice(e); el.focus(); }
   function allAcc() { return BASE.concat(DB.accounts); }
   function acc(id) { return allAcc().filter(function (a) { return a.id === id; })[0]; }
   function role(n) { var a = acc(n || S.me); return a ? a.role : ''; }
@@ -546,8 +549,6 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     var hol0 = holidayOf(sel); var dayEv = evs.filter(function (e) { return e.date === sel; }).sort(function (a, b) { return (a.time || '').localeCompare(b.time || ''); });
     h += '<div class="card"><h2>' + mdw(sel) + '<button class="btn sm alt" data-act="calNew" data-v="' + sel + '">＋ 這天新增</button></h2>' + (hol0 ? '<div class="row"><span class="pill" style="background:#FDECEA;color:#E3181F">國定假日</span>' + esc(hol0[2]) + '</div>' : '') +
       (dayEv.length ? dayEv.map(evRow).join('') : (hol0 ? '' : '<span class="muted">這天沒有安排事項</span>')) + '</div>';
-    var up = evs.filter(function (e) { return e.date >= dkey(); }).sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); }).slice(0, 8);
-    h += '<div class="card"><h2>接下來</h2>' + (up.length ? up.map(function (e) { return '<div class="row"><span class="small" style="width:72px;font-weight:700">' + mdw(e.date) + '</span>' + evRow(e) + '</div>'; }).join('') : '<span class="muted">還沒有之後的事項</span>') + '</div>';
     return h;
   }
   function evRow(e) { if (e.leave) return '<div class="row grow"><i class="cdot" style="background:' + evColor(e) + '"></i><span class="grow"><span style="' + (e.pend ? 'background:#FFF4D6;color:#6B4A00' : 'background:#F5C658') + ';border-radius:6px;padding:0 6px;font-weight:700">' + esc(e.title) + '</span><span class="small muted">　休假・' + (e.pend ? '申請中，等主管簽核' : '已核准' + (e.approver ? '（' + esc(e.approver) + '）' : '')) + '</span></span></div>';
@@ -589,7 +590,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (!rows.length) { rows = [{ id: uid(), who: S.me, date: k, project: '', task: '', progress: '進行中', note: '', ts: Date.now() }]; DB.logs.push(rows[0]); }
     var groups = DB.rooms.filter(function (r) { return !r.company && r.members.indexOf(S.me) >= 0; }).map(function (r) { return r.name; }).concat(DB.quick[S.me] || []);
     return '<datalist id="wlProj">' + Array.from(new Set(groups)).map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' + rows.map(function (r, i) {
-      return '<div class="entry"><div class="row"><span class="num">' + (i + 1) + '</span><input class="inp grow" list="wlProj" data-log="' + r.id + '" data-field="project" value="' + esc(r.project) + '" placeholder="專案 *（選群組或輸入）"><button class="btn sm ghost" data-act="logDel" data-v="' + r.id + '" aria-label="刪除" style="color:var(--bad)">' + (S.conf === 'lg' + r.id ? '確定？' : '刪除') + '</button></div>' +
+      return '<div class="entry"><div class="row"><span class="num">' + (i + 1) + '</span><input class="inp grow" list="wlProj" data-log="' + r.id + '" data-field="project" value="' + esc(r.project) + '" placeholder="專案 *（選群組或輸入）"><button class="btn sm ghost" data-act="logCopy" data-v="' + r.id + '">複製</button><button class="btn sm ghost" data-act="logDel" data-v="' + r.id + '" aria-label="刪除" style="color:var(--bad)">' + (S.conf === 'lg' + r.id ? '確定？' : '刪除') + '</button></div>' +
         '<textarea class="inp" data-log="' + r.id + '" data-field="task" rows="2" placeholder="處理事項 *（Enter 換行）">' + esc(r.task) + '</textarea>' +
         '<div class="row"><select class="inp" data-log="' + r.id + '" data-field="progress" style="width:auto">' + opt(PROG, r.progress) + '</select><input class="inp grow" data-log="' + r.id + '" data-field="note" value="' + esc(r.note) + '" placeholder="備註（選填）"></div></div>';
     }).join('') + '<button class="btn sm alt" data-act="logAdd" data-v="' + k + '">＋ 再加一項</button>';
@@ -647,12 +648,12 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     var f = S.f.dw; var editing = !!f.id;
     var rooms = DB.rooms.map(function (r) { return r.name; });
     return '<div class="card"><h2>' + (editing ? '編輯製圖申請' : '申請製圖') + '</h2>' +
-      (editing ? '' : '<label class="field">申請人 *<select id="dwApplicant">' + opt(['孟宏 Jason', 'Sara', '宛汝', '客戶'], f.applicant) + '</select></label><label class="field">客戶名稱 *<input id="dwClient" value="' + esc(f.client) + '" placeholder="例：福安藥妝 王小姐"></label>') +
+      (editing ? '' : '<label class="field">申請人 *<select id="dwApplicant">' + opt(['孟宏 Jason', 'Sara', '宛汝'], f.applicant) + '</select></label>') +
       '<label class="field">專案名稱 *<input id="dwProject" list="dwRooms" value="' + esc(f.project) + '" placeholder="輸入或從群組選擇"></label><datalist id="dwRooms">' + DB.rooms.filter(function (r) { return !r.company; }).map(function (r) { return '<option value="' + esc(r.name) + '">'; }).join('') + '</datalist>' +
       '<div class="grid2"><label class="field">張數<input id="dwQty" type="number" min="1" value="' + esc(f.qty || '') + '" placeholder="無法計算可空著"></label><label class="field">期望完成日 *<input id="dwDue" type="date" value="' + esc(f.due) + '"></label></div>' +
       '<div class="grid2"><label class="field">幾點前完成<select id="dwBy">' + opt(['10:00', '12:00', '15:00', '17:00', '18:00', '不限'], f.by || '不限') + '</select></label><label class="field">指定製圖者 *<select id="dwMaker">' + opt(MAKERS, f.maker || '麗潔') + '</select></label></div>' +
       (editing ? '' : '<label class="field">通知到專案討論<select id="dwRoom">' + opt(rooms, f.room || (roomFor(f.project) || {}).name) + '</select></label>') +
-      '<label class="field">製圖說明 *<textarea id="dwDesc" rows="4" placeholder="尺寸、用途、文案重點">' + esc(f.desc) + '</textarea></label>' +
+      '<label class="field">製圖說明 *<div class="row" style="gap:4px;margin-bottom:2px"><button type="button" class="btn sm ghost" onclick="fmtWrap(\'dwDesc\',\'**\',\'**\')"><b>B 粗體</b></button><button type="button" class="btn sm ghost" onclick="fmtWrap(\'dwDesc\',\'{r:\',\'}\')" style="color:#E3181F">● 紅字</button><button type="button" class="btn sm ghost" onclick="fmtLink(\'dwDesc\')">&#128279; 超連結</button></div><textarea id="dwDesc" rows="4" placeholder="尺寸、用途、文案重點">' + esc(f.desc) + '</textarea></label>' +
       '<label class="field">備註<input id="dwNote" value="' + esc(f.note) + '" placeholder="選填，例如素材放在雲端哪個資料夾"></label>' +
       '<div class="row"><button class="btn ghost" data-act="set" data-k="dw" data-v="">取消</button><button class="btn orange grow" data-act="drawSave">' + (editing ? '儲存修改' : '送出製圖申請') + '</button></div></div>';
   }
@@ -668,7 +669,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (mine && d.status < 3) acts += '<button class="btn sm ghost" data-act="dwEdit" data-v="' + d.id + '">編輯</button><button class="btn sm ghost" data-act="dwCancel" data-v="' + d.id + '" style="color:var(--bad)">' + (S.conf === 'dw' + d.id ? '確定取消？' : '× 取消') + '</button>';
     var stc = ['p-gray', 'p-soft', 'p-wait', 'p-ok'][d.status];
     return '<div class="item draw"><div class="row"><i class="cdot" style="background:' + colorOf(d.project) + '"></i><b class="grow">' + esc(d.project) + '</b><span class="pill ' + stc + '">' + STG[d.status] + '</span></div>' +
-      '<div style="white-space:pre-wrap">' + esc(d.desc) + '</div><div class="small muted">' + (d.qty ? d.qty + ' 張' : '張數未定') + (d.by ? ' · ' + esc(d.by) + ' 前' : '') + ' · 申請 ' + esc(d.applicant) + (d.client ? '（' + esc(d.client) + '）' : '') + ' · 製圖 ' + esc(d.maker || '尚未指派') + '</div>' +
+      '<div style="white-space:pre-wrap">' + descRender(d.desc) + '</div><div class="small muted">' + (d.qty ? d.qty + ' 張' : '張數未定') + (d.by ? ' · ' + esc(d.by) + ' 前' : '') + ' · 申請 ' + esc(d.applicant) + ' · 製圖 ' + esc(d.maker || '尚未指派') + '</div>' +
       (d.review ? '<span class="small" style="font-weight:700;color:' + (d.review === '需修改' ? 'var(--bad)' : (d.review === '已通過' ? 'var(--ok)' : 'var(--ink)')) + '">審核：' + esc(d.review) + (d.doneDate ? ' · ' + esc(d.doneDate) : '') + '</span>' : '') +
       (d.status === 1 && d.fixNote ? '<span class="small" style="color:var(--bad)">要修改：' + esc(d.fixNote) + '</span>' : '') + (d.note ? '<span class="small muted">備註：' + esc(d.note) + '</span>' : '') +
       (d.path && d.status >= 2 ? '<div class="row"><span class="small grow" style="word-break:break-all">完稿：' + (safeUrl(d.path) && /^https?:/i.test(d.path) ? '<a href="' + esc(safeUrl(d.path)) + '" target="_blank" rel="noopener">' + esc(d.path) + '</a>' : esc(d.path)) + '</span><button class="btn sm ghost" data-act="copy" data-v="' + esc(d.path) + '">複製</button></div>' : '') +
@@ -963,7 +964,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     if (document.getElementById('apType')) S.f.ap = { type: val('apType'), project: val('apProject'), title: val('apTitle'), images: (S.f.ap || {}).images || [] };
     if (document.getElementById('lvDate')) S.f.lv = { date: val('lvDate'), span: val('lvSpan'), kind: val('lvKind'), reason: val('lvReason') };
     if (document.getElementById('ceTitle')) S.f.calForm = { cat: val('ceCat'), project: val('ceProj'), title: val('ceTitle'), date: val('ceDate'), time: val('ceTime') };
-    if (document.getElementById('dwDesc') && S.f.dw) { var f = S.f.dw; S.f.dw = { id: f.id, applicant: val('dwApplicant') || f.applicant, client: document.getElementById('dwClient') ? val('dwClient') : f.client, project: val('dwProject'), qty: val('dwQty'), due: val('dwDue'), by: val('dwBy'), maker: val('dwMaker'), room: document.getElementById('dwRoom') ? val('dwRoom') : f.room, desc: val('dwDesc'), note: val('dwNote') }; }
+    if (document.getElementById('dwDesc') && S.f.dw) { var f = S.f.dw; S.f.dw = { id: f.id, applicant: val('dwApplicant') || f.applicant, project: val('dwProject'), qty: val('dwQty'), due: val('dwDue'), by: val('dwBy'), maker: val('dwMaker'), room: document.getElementById('dwRoom') ? val('dwRoom') : f.room, desc: val('dwDesc'), note: val('dwNote') }; }
     if (document.getElementById('ntTitle')) S.f.note = { title: val('ntTitle'), body: val('ntBody') };
     if (document.getElementById('acName')) S.f.ac = { name: val('acName'), url: val('acUrl'), user: val('acUser'), pw: val('acPw'), note: val('acNote') };
     if (document.getElementById('stUrl')) S.f.site = { title: val('stTitle'), url: val('stUrl') };
@@ -992,7 +993,7 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
       else if (!rec.out) { if (nm < WORK_OUT && !S.earlyAsk) { S.earlyAsk = true; render(); return; } DB.punch[S.me][dkey()] = { in: rec.in, out: hm(now) }; S.earlyAsk = false; save(); toast('下班打卡成功 ' + hm(now) + '，辛苦了！'); }
       render(); }); },
     readMentions: function () { DB.mentions.forEach(function (x) { if (x.to === S.me) x.read = true; }); save(); render(); },
-    drawApplyGo: function () { S.tab = 'draw'; S.view = null; S.f.dw = { applicant: S.me, client: '', project: '', qty: '', due: addDays(dkey(), 3), by: '不限', maker: '麗潔', desc: '', note: '' }; S._top = true; render(); },
+    drawApplyGo: function () { S.tab = 'draw'; S.view = null; S.f.dw = { applicant: S.me, project: '', qty: '', due: addDays(dkey(), 3), by: '不限', maker: '麗潔', desc: '', note: '' }; S._top = true; render(); },
     homeLeave: function () { S.tab = 'home'; S.view = null; S.f.apShow = 'leave'; render(); setTimeout(function () { var e = document.getElementById('lvDate'); if (e) e.scrollIntoView({ block: 'center' }); }, 50); },
     // 簽核
     apForm: function (v) { S.f.apShow = v || null; render(); },
@@ -1017,18 +1018,19 @@ html.desk .stat.five { grid-template-columns: repeat(5, 1fr); }
     // 日誌
     logAdd: function (v) { DB.logs.push({ id: uid(), who: S.me, date: v, project: '', task: '', progress: '進行中', note: '', ts: Date.now() }); save(); render(); },
     logDel: function (v) { twice('lg' + v, function () { DB.logs = DB.logs.filter(function (l) { return l.id !== v; }); save(); render(); }); },
+    logCopy: function (v) { var src = DB.logs.filter(function (l) { return l.id === v; })[0]; if (!src) return; DB.logs.push({ id: uid(), who: src.who, date: src.date, project: src.project, task: src.task, progress: src.progress, note: src.note, ts: Date.now() }); save(); render(); },
     quickUse: function (v) { var rows = DB.logs.filter(function (l) { return l.who === S.me && l.date === dkey(); }); var r = rows.filter(function (x) { return !(x.project || '').trim(); })[0]; if (!r) { r = { id: uid(), who: S.me, date: dkey(), project: '', task: '', progress: '進行中', note: '', ts: Date.now() }; DB.logs.push(r); } r.project = v; save(); render(); },
     quickAdd: function () { var n = val('qNew').trim(); if (!n) return; DB.quick[S.me] = (DB.quick[S.me] || []).concat([n]); S.f.qAdd = null; save(); render(); },
     quickDel: function (v) { DB.quick[S.me].splice(+v, 1); save(); render(); },
     planAdd: function () { var k = val('planDate'); if (!k || k <= dkey()) return toast('請選擇明天以後的日期'); if (!DB.logs.some(function (l) { return l.who === S.me && l.date === k; })) DB.logs.push({ id: uid(), who: S.me, date: k, project: '', task: '', progress: '未開始', note: '', ts: Date.now() }); S.f.planNew = null; save(); render(); },
     progDay: function (v) { S.f.progDay = addDays(S.f.progDay || dkey(), +v); render(); },
     // 製圖
-    drawNew: function () { S.f.dw = { applicant: isMgr() || S.me === '宛汝' ? S.me : '宛汝', client: '', project: '', qty: '', due: addDays(dkey(), 3), by: '不限', maker: '麗潔', desc: '', note: '' }; render(); },
+    drawNew: function () { S.f.dw = { applicant: isMgr() || S.me === '宛汝' ? S.me : '宛汝', project: '', qty: '', due: addDays(dkey(), 3), by: '不限', maker: '麗潔', desc: '', note: '' }; render(); },
     drawSave: function () { var f = S.f.dw; var qty = f.qty ? Math.max(1, +f.qty) : null; var by = f.by === '不限' ? '' : f.by;
       if (f.id) { var d = dw(f.id); var ch = []; if (f.project.trim() && f.project.trim() !== d.project) ch.push('專案名稱 → ' + f.project.trim()); if (f.due && f.due !== d.due) ch.push('日期 ' + md(d.due) + ' → ' + md(f.due)); if (f.maker !== d.maker) ch.push('製圖者 → ' + f.maker); if (String(qty || '') !== String(d.qty || '')) ch.push('張數 → ' + (qty || '未定')); if (by !== (d.by || '')) ch.push('完成時間 → ' + (by || '不限')); if (f.desc.trim() && f.desc.trim() !== d.desc) ch.push('製圖說明');
         Object.assign(d, { project: f.project.trim() || d.project, due: f.due || d.due, maker: f.maker, qty: qty, by: by, desc: f.desc.trim() || d.desc, note: f.note.trim() }); if (ch.length) notify(roomFor(d.room || d.project), '製圖申請已修改：' + d.project + '「' + d.desc.slice(0, 18) + '」' + ch.join('、') + '（' + S.me + ' 修改）', d.maker); S.f.dw = null; save(); toast('已更新'); return render(); }
-      if (!f.client.trim() || !f.project.trim() || !f.due || !f.desc.trim()) return toast('請填寫客戶、專案、完成日和製圖說明');
-      var d2 = { id: uid(), applicant: f.applicant === '客戶' ? '客戶：' + f.client.trim() : f.applicant, filedBy: S.me, client: f.client.trim(), project: f.project.trim(), qty: qty, due: f.due, by: by, maker: f.maker, room: f.room, desc: f.desc.trim(), note: f.note.trim(), status: 0, review: '', applyDate: md(dkey()) };
+      if (!f.project.trim() || !f.due || !f.desc.trim()) return toast('請填寫專案、完成日和製圖說明');
+      var d2 = { id: uid(), applicant: f.applicant, filedBy: S.me, project: f.project.trim(), qty: qty, due: f.due, by: by, maker: f.maker, room: f.room, desc: f.desc.trim(), note: f.note.trim(), status: 0, review: '', applyDate: md(dkey()) };
       DB.draws.push(d2); notify(DB.rooms.filter(function (r) { return r.name === f.room; })[0] || roomFor(d2.project), '@' + d2.maker + ' 新的製圖申請：' + d2.project + '「' + d2.desc.slice(0, 24) + '」' + (qty ? qty + ' 張，' : '') + '希望 ' + md(d2.due) + (by ? ' ' + by + ' 前' : '') + '完成（' + S.me + ' 申請）', d2.maker); S.f.dw = null; save(); toast('已送出製圖申請'); render(); },
     dwEdit: function (v) { var d = dw(v); S.f.dw = { id: d.id, project: d.project, qty: d.qty || '', due: d.due, by: d.by || '不限', maker: d.maker || '麗潔', desc: d.desc, note: d.note || '' }; S._top = true; render(); },
     dwCancel: function (v) { twice('dw' + v, function () { var d = dw(v); DB.draws = DB.draws.filter(function (x) { return x !== d; }); notify(roomFor(d.room || d.project), '已取消製圖申請：' + d.project + '「' + d.desc.slice(0, 18) + '」（原訂 ' + md(d.due) + '，' + S.me + ' 取消）', d.maker); save(); render(); }); },
